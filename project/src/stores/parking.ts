@@ -46,6 +46,31 @@ export const useParkingStore = defineStore('parking', () => {
     return vehicles.value.find(v => v.plate === plate);
   };
 
+  const updateVehicle = (originalPlate: string, updatedVehicle: Omit<Vehicle, 'registrationDate'>) => {
+    const index = vehicles.value.findIndex(v => v.plate === originalPlate);
+    if (index === -1) return false;
+
+    const originalVehicle = vehicles.value[index];
+    vehicles.value[index] = {
+      ...updatedVehicle,
+      registrationDate: originalVehicle.registrationDate,
+    };
+    saveVehicles();
+    return true;
+  };
+
+  const canDeleteVehicle = (plate: string) => {
+    return !parkingRecords.value.some(record => record.plate === plate);
+  };
+
+  const deleteVehicle = (plate: string) => {
+    if (!canDeleteVehicle(plate)) return false;
+    
+    vehicles.value = vehicles.value.filter(v => v.plate !== plate);
+    saveVehicles();
+    return true;
+  };
+
   const registerEntry = (plate: string) => {
     const vehicle = findVehicle(plate);
     if (!vehicle) {
@@ -95,5 +120,8 @@ export const useParkingStore = defineStore('parking', () => {
     registerEntry,
     registerExit,
     findVehicle,
+    updateVehicle,
+    deleteVehicle,
+    canDeleteVehicle,
   };
 });
