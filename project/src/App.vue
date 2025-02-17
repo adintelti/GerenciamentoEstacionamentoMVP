@@ -29,17 +29,6 @@ const navigateTo = (tab: string) => {
           Lista de Veículos
         </button>
         <button
-          @click="navigateTo('register')"
-          :class="[
-            'px-4 py-2 rounded-md',
-            activeTab === 'register'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700'
-          ]"
-        >
-          Cadastro de Veículos
-        </button>
-        <button
           @click="navigateTo('parking')"
           :class="[
             'px-4 py-2 rounded-md',

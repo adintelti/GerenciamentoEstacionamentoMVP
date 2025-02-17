@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useParkingStore } from '../stores/parking';
 import { format } from 'date-fns';
+import type { ParkingRecord } from '../types';
 
 const store = useParkingStore();
+const sortField = ref<keyof ParkingRecord>('entryTime');
+const sortDirection = ref<'asc' | 'desc'>('desc');
 
 const sortedParkingRecords = computed(() => {
   const records = [...store.parkingRecords];
@@ -12,16 +15,38 @@ const sortedParkingRecords = computed(() => {
   const openStays = records.filter(record => record.exitTime === null);
   const closedStays = records.filter(record => record.exitTime !== null);
   
-  // Sort both arrays by entry time
-  const sortByEntryTime = (a: any, b: any) => 
-    new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime();
+  // Sort both arrays
+  const sortByField = (a: ParkingRecord, b: ParkingRecord) => {
+    const aValue = a[sortField.value];
+    const bValue = b[sortField.value];
+    
+    if (aValue === null && bValue !== null) return -1;
+    if (aValue !== null && bValue === null) return 1;
+    if (aValue < bValue) return sortDirection.value === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection.value === 'asc' ? 1 : -1;
+    return 0;
+  };
   
-  openStays.sort(sortByEntryTime);
-  closedStays.sort(sortByEntryTime);
+  openStays.sort(sortByField);
+  closedStays.sort(sortByField);
   
-  // Concatenate arrays with open stays first
+  // Always show open stays first
   return [...openStays, ...closedStays];
 });
+
+const toggleSort = (field: keyof ParkingRecord) => {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField.value = field;
+    sortDirection.value = 'asc';
+  }
+};
+
+const getSortIcon = (field: keyof ParkingRecord) => {
+  if (sortField.value !== field) return '↕️';
+  return sortDirection.value === 'asc' ? '↑' : '↓';
+};
 
 const formatDateTime = (dateString: string) => {
   return new Date(dateString).toLocaleString('pt-BR');
@@ -51,10 +76,25 @@ const getStayStatus = (record: { exitTime: string | null }) => {
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+            <th 
+              @click="toggleSort('plate')"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+            >
+              Placa {{ getSortIcon('plate') }}
+            </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saída</th>
+            <th 
+              @click="toggleSort('entryTime')"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+            >
+              Entrada {{ getSortIcon('entryTime') }}
+            </th>
+            <th 
+              @click="toggleSort('exitTime')"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+            >
+              Saída {{ getSortIcon('exitTime') }}
+            </th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
