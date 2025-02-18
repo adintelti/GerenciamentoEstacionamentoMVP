@@ -101,7 +101,7 @@ export const useParkingStore = defineStore('parking', () => {
       ...updatedUser,
       registrationDate: originalUser.registrationDate,
       birthday: converterParaISO(updatedUser.birthday),
-      exitDate: updatedUser.exitDate ? converterParaISO(updatedUser.birthday) : '',
+      exitDate: updatedUser.exitDate ? converterParaISO(updatedUser.exitDate) : '',
     };
     saveUsers();
     return true;

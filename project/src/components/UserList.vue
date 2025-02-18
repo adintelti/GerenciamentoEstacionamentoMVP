@@ -11,8 +11,21 @@ const messageType = ref<'success' | 'error'>('success');
 
 const sortField = ref<keyof User>('registrationDate');
 const sortDirection = ref<'asc' | 'desc'>('desc');
+const searchQuery = ref('');
 
 const users = computed(() => {
+  if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase();
+      return store.users.filter(user => 
+      user.document.toLowerCase().includes(query) ||
+      user.name.toLowerCase().includes(query) ||
+      user.username.toLowerCase().includes(query) ||
+      user.birthday.toLowerCase().includes(query) ||
+      user.registrationDate.toLowerCase().includes(query) ||
+      user.exitDate.toLowerCase().includes(query)
+    );
+  }
+
   const sorted = [...store.users].sort((a, b) => {
     const aValue = a[sortField.value];
     const bValue = b[sortField.value];
@@ -53,7 +66,7 @@ const deleteUser = (plate: string) => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('pt-BR');
+  return new Date(dateString.split('T')[0]).toLocaleDateString('pt-BR');
 };
 
 const navigateToRegister = () => {
@@ -78,6 +91,15 @@ const navigateToRegister = () => {
       'bg-red-100 text-red-700': messageType === 'error'
     }">
       {{ message }}
+    </div>
+
+    <div class="mb-4">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Pesquisar usuários..."
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      />
     </div>
 
     <div class="overflow-x-auto">

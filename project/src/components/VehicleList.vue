@@ -11,8 +11,19 @@ const messageType = ref<'success' | 'error'>('success');
 
 const sortField = ref<keyof Vehicle>('registrationDate');
 const sortDirection = ref<'asc' | 'desc'>('desc');
+const searchQuery = ref('');
 
 const vehicles = computed(() => {
+  if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase();
+      return store.vehicles.filter(vehicle => 
+      vehicle.plate.toLowerCase().includes(query) ||
+      vehicle.brand.toLowerCase().includes(query) ||
+      vehicle.model.toLowerCase().includes(query) ||
+      vehicle.color.toLowerCase().includes(query)
+    );
+  }
+
   const sorted = [...store.vehicles].sort((a, b) => {
     const aValue = a[sortField.value];
     const bValue = b[sortField.value];
@@ -78,6 +89,15 @@ const navigateToRegister = () => {
       'bg-red-100 text-red-700': messageType === 'error'
     }">
       {{ message }}
+    </div>
+
+    <div class="mb-4">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Pesquisar veículos..."
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      />
     </div>
 
     <div class="overflow-x-auto">

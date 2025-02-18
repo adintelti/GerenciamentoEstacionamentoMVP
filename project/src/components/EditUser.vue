@@ -56,7 +56,7 @@ const handleSubmit = () => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('pt-BR');
+  return new Date(dateString.split('T')[0]).toLocaleDateString('pt-BR');
 };
 </script>
 
