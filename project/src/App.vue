@@ -18,6 +18,17 @@ const navigateTo = (tab: string) => {
       
       <div class="flex justify-center space-x-4 mb-6">
         <button
+          @click="navigateTo('listUsers')"
+          :class="[
+            'px-4 py-2 rounded-md',
+            activeTab === 'listUsers'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700'
+          ]"
+        >
+          Lista de Usuários
+        </button>
+        <button
           @click="navigateTo('list')"
           :class="[
             'px-4 py-2 rounded-md',

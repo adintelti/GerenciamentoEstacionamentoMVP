@@ -11,3 +11,12 @@ export interface ParkingRecord {
   entryTime: string;
   exitTime: string | null;
 }
+
+export interface User {
+  name: string;
+  document: string;
+  username: string;
+  birthday: string;
+  registrationDate: string;
+  exitDate: string;
+}
