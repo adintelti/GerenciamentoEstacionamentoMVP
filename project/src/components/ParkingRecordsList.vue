@@ -1,16 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useParkingStore } from '../stores/parking';
 import { format } from 'date-fns';
 
 const store = useParkingStore();
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
-const sortedParkingRecords = computed(() => {
+const filteredRecords = computed(() => {
   const records = [...store.parkingRecords];
   
+  return records.filter(record => {
+    const query = searchQuery.value.toLowerCase();
+    const vehicle = store.findVehicle(record.plate);
+    const vehicleInfo = vehicle 
+      ? `${vehicle.brand} ${vehicle.model} ${vehicle.color}`.toLowerCase()
+      : '';
+    
+    return record.plate.toLowerCase().includes(query) ||
+           vehicleInfo.includes(query);
+  });
+});
+
+const sortedParkingRecords = computed(() => {
   // Separate open and closed stays
-  const openStays = records.filter(record => record.exitTime === null);
-  const closedStays = records.filter(record => record.exitTime !== null);
+  const openStays = filteredRecords.value.filter(record => record.exitTime === null);
+  const closedStays = filteredRecords.value.filter(record => record.exitTime !== null);
   
   // Sort both arrays by entry time
   const sortByEntryTime = (a: any, b: any) => 
@@ -20,8 +36,17 @@ const sortedParkingRecords = computed(() => {
   closedStays.sort(sortByEntryTime);
   
   // Concatenate arrays with open stays first
-  return [...openStays, ...closedStays];
+  const allRecords = [...openStays, ...closedStays];
+  
+  // Apply pagination
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return allRecords.slice(start, end);
 });
+
+const totalPages = computed(() => 
+  Math.ceil(filteredRecords.value.length / itemsPerPage)
+);
 
 const formatDateTime = (dateString: string) => {
   return new Date(dateString).toLocaleString('pt-BR');
@@ -35,6 +60,15 @@ const getVehicleInfo = (plate: string) => {
 const getStayStatus = (record: { exitTime: string | null }) => {
   return record.exitTime === null ? 'Em andamento' : 'Finalizada';
 };
+
+const changePage = (page: number) => {
+  currentPage.value = page;
+};
+
+// Reset to first page when search query changes
+watch(searchQuery, () => {
+  currentPage.value = 1;
+});
 </script>
 
 <template>
@@ -44,6 +78,15 @@ const getStayStatus = (record: { exitTime: string | null }) => {
       <p class="text-gray-600 mt-1">
         {{ format(new Date(), "dd/MM/yyyy") }}
       </p>
+    </div>
+
+    <div class="mb-4">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Pesquisar estadias..."
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      />
     </div>
 
     <div class="overflow-x-auto">
@@ -84,6 +127,23 @@ const getStayStatus = (record: { exitTime: string | null }) => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="mt-4 flex justify-center space-x-2">
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="changePage(page)"
+        :class="[
+          'px-3 py-1 rounded-md',
+          currentPage === page
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+        ]"
+      >
+        {{ page }}
+      </button>
     </div>
   </div>
 </template>

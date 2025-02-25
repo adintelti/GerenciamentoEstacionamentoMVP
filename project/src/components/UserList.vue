@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useParkingStore } from '../stores/parking';
+import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import type { User } from '../types';
 
-const store = useParkingStore();
+const store = useAuthStore();
 const router = useRouter();
 const message = ref('');
 const messageType = ref<'success' | 'error'>('success');
 
-const sortField = ref<keyof User>('registrationDate');
+const sortField = ref<keyof User>('createdAt');
 const sortDirection = ref<'asc' | 'desc'>('desc');
 const searchQuery = ref('');
 
 const users = computed(() => {
+  store.loadList();
+
   if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
       return store.users.filter(user => 
-      user.document.toLowerCase().includes(query) ||
       user.name.toLowerCase().includes(query) ||
-      user.username.toLowerCase().includes(query) ||
-      user.birthday.toLowerCase().includes(query) ||
-      user.registrationDate.toLowerCase().includes(query) ||
-      user.exitDate.toLowerCase().includes(query)
+      user.document.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query) ||
+      user.createdAt.toLowerCase().includes(query)
     );
   }
 
@@ -52,23 +52,6 @@ const getSortIcon = (field: keyof User) => {
   return sortDirection.value === 'asc' ? '↑' : '↓';
 };
 
-const deleteUser = (plate: string) => {
-  const canDelete = store.canDeleteUser(plate);
-  if (!canDelete) {
-    message.value = 'Não é possível excluir um veículo com estadias no dia atual.';
-    messageType.value = 'error';
-    return;
-  }
-
-  store.deleteUser(plate);
-  message.value = 'Usuário excluído com sucesso.';
-  messageType.value = 'success';
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString.split('T')[0]).toLocaleDateString('pt-BR');
-};
-
 const navigateToRegister = () => {
   router.push('/registerUser');
 };
@@ -78,12 +61,14 @@ const navigateToRegister = () => {
   <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold">Lista de Usuários</h2>
-      <button
-        @click="navigateToRegister"
-        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-      >
-        Novo Usuário
-      </button>
+      <div class="mb-4">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Pesquisar usuários..."
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
     </div>
 
     <div v-if="message" class="mb-4 p-4 rounded-md" :class="{
@@ -91,15 +76,6 @@ const navigateToRegister = () => {
       'bg-red-100 text-red-700': messageType === 'error'
     }">
       {{ message }}
-    </div>
-
-    <div class="mb-4">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Pesquisar usuários..."
-        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      />
     </div>
 
     <div class="overflow-x-auto">
@@ -119,10 +95,10 @@ const navigateToRegister = () => {
               Nome {{ getSortIcon('name') }}
             </th>
             <th 
-              @click="toggleSort('username')"
+              @click="toggleSort('email')"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
             >
-              Usuario {{ getSortIcon('username') }}
+              Usuario {{ getSortIcon('email') }}
             </th>
             <th 
               @click="toggleSort('birthday')"
@@ -131,10 +107,10 @@ const navigateToRegister = () => {
               Data de Nascimento {{ getSortIcon('birthday') }}
             </th>
             <th 
-              @click="toggleSort('registrationDate')"
+              @click="toggleSort('createdAt')"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
             >
-              Data Cadastro {{ getSortIcon('registrationDate') }}
+              Data Cadastro {{ getSortIcon('createdAt') }}
             </th>
             <th 
               @click="toggleSort('exitDate')"
@@ -149,10 +125,10 @@ const navigateToRegister = () => {
           <tr v-for="user in users" :key="user.document">
             <td class="px-6 py-4 whitespace-nowrap">{{ user.document }}</td>
             <td class="px-6 py-4 whitespace-nowrap">{{ user.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ user.username }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(user.birthday) }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(user.registrationDate) }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ user.exitDate ? formatDate(user.exitDate) : '-' }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ user.email }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ user.birthday ? store.formatDate(user.birthday) : '-' }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ store.formatDate(user.createdAt) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ user.exitDate ? store.formatDate(user.exitDate) : '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap space-x-2">
               <router-link
                 :to="{ name: 'edit-user', params: { document: user.document }}"
@@ -160,12 +136,6 @@ const navigateToRegister = () => {
               >
                 Editar
               </router-link>
-              <button
-                @click="deleteUser(user.document)"
-                class="text-red-600 hover:text-red-900"
-              >
-                Excluir
-              </button>
             </td>
           </tr>
           <tr v-if="users.length === 0">

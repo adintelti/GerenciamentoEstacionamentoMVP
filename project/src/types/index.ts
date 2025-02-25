@@ -3,7 +3,7 @@ export interface Vehicle {
   brand: string;
   model: string;
   color: string;
-  registrationDate: string;
+  createdAt: string;
 }
 
 export interface ParkingRecord {
@@ -13,10 +13,12 @@ export interface ParkingRecord {
 }
 
 export interface User {
+  id: string | null;
   name: string;
   document: string;
-  username: string;
-  birthday: string;
-  registrationDate: string;
-  exitDate: string;
+  birthday: string | null;
+  email: string;
+  password: string | null;
+  createdAt: string;
+  exitDate: string | null;
 }

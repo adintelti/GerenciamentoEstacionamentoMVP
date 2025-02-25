@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useParkingStore } from '../stores/parking';
+import { useAuthStore } from '../stores/auth';
 
 const route = useRoute();
 const router = useRouter();
-const store = useParkingStore();
+const store = useAuthStore();
 
 const name = ref('');
 const document = ref('');
-const username = ref('');
+const email = ref('');
 const birthday = ref('');
 const exitDate = ref('');
 const message = ref('');
@@ -24,13 +24,13 @@ onMounted(() => {
 
   name.value = user.name;
   document.value = user.document;
-  username.value = user.username;
-  birthday.value = formatDate(user.birthday);
-  exitDate.value = user.exitDate ? formatDate(user.exitDate) : '';
+  email.value = user.email;
+  birthday.value = store.formatDate(user.birthday);
+  exitDate.value = user.exitDate ? store.formatDate(user.exitDate) : '';
 });
 
 const handleSubmit = () => {
-  if (!document.value || !name.value || !username.value || !birthday.value) {
+  if (!document.value || !name.value || !email.value || !birthday.value) {
     message.value = 'Por favor, preencha todos os campos.';
     return;
   }
@@ -41,11 +41,13 @@ const handleSubmit = () => {
   }
 
   const success = store.updateUser(originalDocument, {
-    document: document.value,
     name: name.value,
-    username: username.value,
+    document: document.value,
     birthday: birthday.value,
-    exitDate: exitDate.value
+    email: email.value,
+    exitDate: exitDate.value,
+    id: null,
+    password: null
   });
 
   if (success) {
@@ -53,10 +55,6 @@ const handleSubmit = () => {
   } else {
     message.value = 'Erro ao atualizar o usuario.';
   }
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString.split('T')[0]).toLocaleDateString('pt-BR');
 };
 </script>
 
@@ -74,15 +72,6 @@ const formatDate = (dateString: string) => {
 
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700">Documento</label>
-        <input
-          v-model="document"
-          type="text"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          required
-        />
-      </div>
-      <div>
         <label class="block text-sm font-medium text-gray-700">Nome</label>
         <input
           v-model="name"
@@ -92,9 +81,27 @@ const formatDate = (dateString: string) => {
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700">Nome de Usuario</label>
+        <label class="block text-sm font-medium text-gray-700">Documento</label>
         <input
-          v-model="username"
+          v-model="document"
+          type="text"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">E-mail</label>
+        <input
+          v-model="email"
+          type="text"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Data de nascimento</label>
+        <input
+          v-model="birthday"
           type="text"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           required
@@ -106,15 +113,6 @@ const formatDate = (dateString: string) => {
           v-model="exitDate"
           type="text"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Data de nascimento</label>
-        <input
-          v-model="birthday"
-          type="text"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          required
         />
       </div>
       <div class="flex justify-end space-x-3">

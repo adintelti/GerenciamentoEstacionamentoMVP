@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useParkingStore } from '../stores/parking';
 import { useRouter } from 'vue-router';
 import type { Vehicle } from '../types';
@@ -9,11 +9,13 @@ const router = useRouter();
 const message = ref('');
 const messageType = ref<'success' | 'error'>('success');
 
-const sortField = ref<keyof Vehicle>('registrationDate');
+const sortField = ref<keyof Vehicle>('createdAt');
 const sortDirection = ref<'asc' | 'desc'>('desc');
 const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
-const vehicles = computed(() => {
+const filteredVehicles = computed(() => {
   if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
       return store.vehicles.filter(vehicle => 
@@ -34,6 +36,16 @@ const vehicles = computed(() => {
   });
   
   return sorted;
+});
+
+const totalPages = computed(() => 
+  Math.ceil(filteredVehicles.value.length / itemsPerPage)
+);
+
+const vehicles = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredVehicles.value.slice(start, end);
 });
 
 const toggleSort = (field: keyof Vehicle) => {
@@ -68,8 +80,17 @@ const formatDate = (dateString: string) => {
 };
 
 const navigateToRegister = () => {
-  router.push('/register');
+  router.push('/register-vehicle');
 };
+
+const changePage = (page: number) => {
+  currentPage.value = page;
+};
+
+// Reset to first page when search query changes
+watch(searchQuery, () => {
+  currentPage.value = 1;
+});
 </script>
 
 <template>
@@ -129,10 +150,10 @@ const navigateToRegister = () => {
               Cor {{ getSortIcon('color') }}
             </th>
             <th 
-              @click="toggleSort('registrationDate')"
+              @click="toggleSort('createdAt')"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
             >
-              Data Cadastro {{ getSortIcon('registrationDate') }}
+              Data Cadastro {{ getSortIcon('createdAt') }}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
           </tr>
@@ -143,7 +164,7 @@ const navigateToRegister = () => {
             <td class="px-6 py-4 whitespace-nowrap">{{ vehicle.brand }}</td>
             <td class="px-6 py-4 whitespace-nowrap">{{ vehicle.model }}</td>
             <td class="px-6 py-4 whitespace-nowrap">{{ vehicle.color }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(vehicle.registrationDate) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(vehicle.createdAt) }}</td>
             <td class="px-6 py-4 whitespace-nowrap space-x-2">
               <router-link
                 :to="{ name: 'edit-vehicle', params: { plate: vehicle.plate }}"
@@ -166,6 +187,23 @@ const navigateToRegister = () => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="mt-4 flex justify-center space-x-2">
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="changePage(page)"
+        :class="[
+          'px-3 py-1 rounded-md',
+          currentPage === page
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+        ]"
+      >
+        {{ page }}
+      </button>
     </div>
   </div>
 </template>
